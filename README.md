@@ -39,7 +39,7 @@ additional_scopes=["microprofile-jwt"]
 # When ID Sea starts, it pulls OIDC configuration from the issuer url.
 # However, in some configurations, you may wish to pull the OIDC configuration from a separate URL.
 # For example, if you have a Docker network, where the ID Sea container can reach http://keycloak/, but the public issuer URL is https://keycloak.lan/, that is where this parameter is useful
-issuer_discovery_override_url=http://keycloak/realms/home
+issuer_discovery_override_url="http://keycloak/realms/home"
 ```
 
 ### Step 2. Configuring cookie/session settings
@@ -113,7 +113,7 @@ Then, you can create rules, governing which roles can access which resources
 ```toml
 [access_control.acls]
 family-user = ["media"]
-dev-user = ["media", "tools]
+dev-user = ["media", "tools"]
 admin-user = ["admin"]
 ```
 
