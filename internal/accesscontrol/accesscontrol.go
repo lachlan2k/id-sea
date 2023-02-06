@@ -9,12 +9,16 @@ import (
 )
 
 func VerifyRedirectURL(conf *config.Config, urlStr string) bool {
+	// We only allow full URLs in our redirect.
+	// ?redir=/foo is not allowed
+	// ?redir=google.com is not allowed
+	// ?redir=https://google.com will be evaluated
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return false
 	}
 
-	return utils.TestStringAgainstSliceMatchers(conf.RedirectAllowlist, u.Hostname())
+	return utils.TestStringAgainstSliceMatchers(conf.RedirectAllowlist, u.Host)
 }
 
 func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bool {
