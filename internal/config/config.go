@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	ListenPort int `toml:"listen_port"`
+	ListenPort        int      `toml:"listen_port"`
+	RedirectAllowlist []string `toml:"redirect_allow_list"`
 
 	Cookie struct {
 		Secret string `toml:"secret"`

@@ -1,0 +1,27 @@
+[oidc]
+client_id="id-sea"
+client_secret="changeme"
+issuer_url="https://keycloak.lan/realms/home"
+redirect_url="http://localhost:8080/callback"
+
+[cookie]
+secret="changeme"
+
+[access_control.host_groups]
+
+admin = [ "*.server.lan" ]
+
+tools = [
+    "wiki.server.lan",
+    "gitlab.server.lan"
+]
+
+media = [
+    "plex.server.lan",
+    "photos.server.lan"
+]
+
+[access_control.acls]
+family-user = ["media"]
+dev-user = ["media", "tools]
+admin-user = ["admin"]

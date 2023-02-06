@@ -1,0 +1,11 @@
+FROM golang:1.19
+
+RUN go install github.com/codegangsta/gin@latest
+
+WORKDIR /app
+COPY go.mod go.sum /app/
+RUN go mod download
+
+# Mount source directory to /app in container
+# i.e -v .:/app:z
+ENTRYPOINT ["gin", "main.go"]
