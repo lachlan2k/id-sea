@@ -136,7 +136,19 @@ func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Con
 	})
 
 	// TODO: verify redirect URL
-	return c.Redirect(http.StatusFound, state.Redirect)
+	if accesscontrol.VerifyRedirectURL(conf, state.Redirect) {
+		return c.Redirect(http.StatusFound, state.Redirect)
+	} else {
+		var res struct {
+			Email string   `json:"email"`
+			Roles []string `json:"roles"`
+		}
+
+		res.Email = email
+		res.Roles = roles
+
+		return c.JSON(http.StatusOK, res)
+	}
 }
 
 type unauthorizedResponse struct {

@@ -2,10 +2,26 @@ package accesscontrol
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/lachlan2k/id-sea/internal/config"
 	"github.com/lachlan2k/id-sea/internal/utils"
 )
+
+func VerifyRedirectURL(conf *config.Config, urlStr string) bool {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return false
+	}
+
+	for _, allowedHost := range conf.RedirectAllowlist {
+		if utils.MatchesWithWildcard(u.Hostname(), allowedHost) {
+			return true
+		}
+	}
+
+	return false
+}
 
 func CheckAccess(conf *config.Config, email string, roles []string, hostname string) error {
 	// Check access control
@@ -22,6 +38,10 @@ func CheckAccess(conf *config.Config, email string, roles []string, hostname str
 
 	if roleListForUser, ok := conf.AccessControl.RoleMapping[email]; ok {
 		allOfUsersRoles = append(allOfUsersRoles, roleListForUser...)
+	}
+
+	if conf.AccessControl.MandatoryRole != "" && !utils.SliceHasMatch(allOfUsersRoles, conf.AccessControl.MandatoryRole, true) {
+		return fmt.Errorf("user (%s) does not have mandatory role %s", email, conf.AccessControl.MandatoryRole)
 	}
 
 	if !conf.AccessControl.DisableACLRules {

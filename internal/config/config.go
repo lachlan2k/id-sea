@@ -26,7 +26,7 @@ type Config struct {
 		ClientID                   string `toml:"client_id"`
 		ClientSecret               string `toml:"client_secret"`
 
-		// The name of the OIDC claim associated to a list of roles. Default is "roles"
+		// The name of the OIDC claim associated to a list of roles. Default is "groups"
 		DisableRoles     bool     `toml:"disable_roles"`
 		RoleClaimName    string   `toml:"role_claim_name"`
 		AdditionalScopes []string `toml:"additional_scopes"`
@@ -50,7 +50,7 @@ type Config struct {
 		// name => hostname groupings
 		HostGroups map[string][]string `toml:"host_groups"`
 
-		// role name => allowed
+		// role name => allowed host groups
 		ACLs map[string][]string `toml:"acls"`
 	} `toml:"access_control"`
 }
@@ -63,7 +63,7 @@ func (c *Config) setDefaults() {
 	c.Cookie.Secure = true
 	c.Cookie.MaxAge = 60 * 60 * 24 // 24 hours
 
-	c.OIDC.RoleClaimName = "roles"
+	c.OIDC.RoleClaimName = "groups"
 	c.OIDC.DisableRoles = false
 
 	c.AccessControl.DisableACLRules = false
@@ -108,7 +108,7 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		// User didn't explicitly set AllowAllEmails
 		if nilChecker.AccessControl.AllowAllEmails == nil {
 			log.Println("Warning: you have set an email_allow_list, but allow_all_emails was not set")
-			log.Println("Whilst this is acceptable, and allow_all_emails has default to false, if email_allow_list")
+			log.Println("Whilst this is acceptable, and allow_all_emails has defaulted to false, if you remove all entries from email_allow_list, then allow_all_emails will be implicitly enabled")
 			log.Println("As such, it is reccomended to explicitly set email_allow_list=false in your config")
 			conf.AccessControl.AllowAllEmails = false
 		} else if conf.AccessControl.AllowAllEmails {
