@@ -2,13 +2,16 @@ package webserver
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
-	"github.com/lachlan2k/oh-id-see/internal/config"
+	"github.com/lachlan2k/id-sea/internal/config"
 	"golang.org/x/oauth2"
 )
+
+const nonceCookieName = "_oauth_state_nonce"
 
 type oidcUtils struct {
 	ctx      context.Context
@@ -48,12 +51,36 @@ func makeOIDCUtils(conf *config.Config) (*oidcUtils, error) {
 		RedirectURL:  conf.OIDC.RedirectURL,
 
 		Endpoint: endpoint,
-		Scopes:   []string{oidc.ScopeOpenID, "email", "profile"},
+		Scopes:   append([]string{oidc.ScopeOpenID, "email", "profile"}, conf.OIDC.AdditionalScopes...),
 	}
 
 	utils.verifier = utils.provider.Verifier(&oidc.Config{ClientID: conf.OIDC.ClientID})
 
 	return utils, nil
+}
+
+func extractRolesFromClaim(conf *config.Config, claims map[string]any) ([]string, error) {
+	if conf.OIDC.DisableRoles {
+		return []string{}, nil
+	}
+
+	roleClaim := claims[conf.OIDC.RoleClaimName]
+
+	rolesAny, ok := roleClaim.([]any)
+	if !ok {
+		return nil, fmt.Errorf("couldn't cast roles %v (type of %T) to []any", roleClaim, roleClaim)
+	}
+
+	roles := make([]string, len(rolesAny))
+	for i, v := range rolesAny {
+		roleStr, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to cast role item [%d] %v (type of %T) to string", i, v, v)
+		}
+		roles[i] = roleStr
+	}
+
+	return roles, nil
 }
 
 type oauthState struct {

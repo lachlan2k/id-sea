@@ -6,7 +6,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/lachlan2k/oh-id-see/internal/config"
+	"github.com/lachlan2k/id-sea/internal/config"
 )
 
 var jwtSigningMethod = jwt.SigningMethodHS256
@@ -20,7 +20,7 @@ type jwtClaims struct {
 func validateJWT(conf *config.Config, c echo.Context) (*jwtClaims, error) {
 	authCookie, err := c.Cookie(conf.Cookie.Name)
 	if err != nil || authCookie.Value == "" {
-		return nil, fmt.Errorf("Cookie was missing or empty: %v", err)
+		return nil, fmt.Errorf("cookie was missing or empty: %v", err)
 	}
 
 	jwtStr := authCookie.Value
@@ -37,11 +37,11 @@ func validateJWT(conf *config.Config, c echo.Context) (*jwtClaims, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("Received invalid JWT: %v, err: %v", jwtStr, err)
+		return nil, fmt.Errorf("received invalid JWT: %v, err: %v", jwtStr, err)
 	}
 
 	if !token.Valid {
-		return nil, fmt.Errorf("Recieved JWT with invalid signature: %v, err: %v", jwtStr, err)
+		return nil, fmt.Errorf("recieved JWT with invalid signature: %v, err: %v", jwtStr, err)
 	}
 
 	return authClaims, nil

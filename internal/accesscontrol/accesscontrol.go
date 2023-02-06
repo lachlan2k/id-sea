@@ -3,7 +3,7 @@ package accesscontrol
 import (
 	"fmt"
 
-	"github.com/lachlan2k/oh-id-see/internal/config"
+	"github.com/lachlan2k/id-sea/internal/config"
 )
 
 func contains(s []string, val string) bool {
