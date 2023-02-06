@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/golang-jwt/jwt/v4 v4.4.3
-	github.com/labstack/echo-jwt/v4 v4.1.0
 	github.com/labstack/echo/v4 v4.10.0
 	golang.org/x/oauth2 v0.3.0
 )
