@@ -14,13 +14,7 @@ func VerifyRedirectURL(conf *config.Config, urlStr string) bool {
 		return false
 	}
 
-	for _, allowedHost := range conf.RedirectAllowlist {
-		if utils.MatchesWithWildcard(u.Hostname(), allowedHost) {
-			return true
-		}
-	}
-
-	return false
+	return utils.TestStringAgainstSliceMatchers(conf.RedirectAllowlist, u.Hostname())
 }
 
 func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bool {
@@ -29,12 +23,12 @@ func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bo
 		return true
 	}
 
-	if utils.SliceHasMatch(roleClaims, conf.AccessControl.MandatoryRole, true) {
+	if utils.TestSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleClaims) {
 		return true
 	}
 
 	if roleListForUser, ok := conf.AccessControl.RoleMapping[email]; ok {
-		if utils.SliceHasMatch(roleListForUser, conf.AccessControl.MandatoryRole, true) {
+		if utils.TestSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleListForUser) {
 			return true
 		}
 	}
@@ -44,9 +38,8 @@ func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bo
 
 func RoleACLMatchesHost(conf *config.Config, allRoles []string, hostname string) bool {
 	for _, roleName := range allRoles {
-		if roleACL, ok := conf.AccessControl.ACLs[roleName]; ok {
-			// TODO: invert this matcher so that the role ACL is fuzzy, not the hostname
-			if utils.SliceHasMatch(roleACL, hostname, true) {
+		if hostsRoleCanAccess, ok := conf.AccessControl.ACLs[roleName]; ok {
+			if utils.TestStringAgainstSliceMatchers(hostsRoleCanAccess, hostname) {
 				return true
 			}
 		}
@@ -57,7 +50,7 @@ func RoleACLMatchesHost(conf *config.Config, allRoles []string, hostname string)
 
 func CheckAccess(conf *config.Config, email string, roles []string, hostname string) error {
 	if !conf.AccessControl.AllowAllEmails {
-		if !utils.SliceHasMatch(conf.AccessControl.EmailAllowlist, email, true) {
+		if !utils.TestStringAgainstSliceMatchers(conf.AccessControl.EmailAllowlist, email) {
 			return fmt.Errorf("user was successfully auth'd (%s), but their email wasn't in the allow list", email)
 		}
 	}
