@@ -9,7 +9,7 @@ import (
 
 func CheckAccess(conf *config.Config, email string, roles []string, hostname string) error {
 	// Check access control
-	if len(conf.AccessControl.EmailAllowlist) > 0 {
+	if !conf.AccessControl.AllowAllEmails {
 		if !utils.SliceHasMatch(conf.AccessControl.EmailAllowlist, email, true) {
 			return fmt.Errorf("user was successfully auth'd (%s), but their email wasn't in the allow list", email)
 		}
