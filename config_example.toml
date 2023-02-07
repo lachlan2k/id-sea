@@ -4,7 +4,7 @@ client_secret="changeme"
 issuer_url="https://keycloak.lan/realms/home"
 redirect_url="http://localhost:8080/callback"
 
-[cookie]
+[session.cookie]
 secret="changeme"
 
 [access_control.host_groups]

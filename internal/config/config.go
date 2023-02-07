@@ -11,13 +11,17 @@ type Config struct {
 	ListenPort        int      `toml:"listen_port"`
 	RedirectAllowlist []string `toml:"redirect_allow_list"`
 
-	Cookie struct {
-		Secret string `toml:"secret"`
-		Domain string `toml:"domain"`
-		Name   string `toml:"name"`
-		Secure bool   `toml:"secure"`
-		MaxAge int    `toml:"max_age"`
-	} `toml:"cookie"`
+	Session struct {
+		Method   string `toml:"type"`
+		Lifetime int    `toml:"lifetime"`
+
+		Cookie struct {
+			Secret string `toml:"secret"`
+			Domain string `toml:"domain"`
+			Name   string `toml:"name"`
+			Secure bool   `toml:"secure"`
+		} `toml:"cookie"`
+	} `toml:"session"`
 
 	OIDC struct {
 		RedirectURL                string `toml:"redirect_url"`
@@ -61,9 +65,11 @@ type Config struct {
 func (c *Config) setDefaults() {
 	c.ListenPort = 8080
 
-	c.Cookie.Name = "_auth_proxy_token"
-	c.Cookie.Secure = true
-	c.Cookie.MaxAge = 60 * 60 * 24 // 24 hours
+	c.Session.Method = "jwt-cookie"
+	c.Session.Lifetime = 60 * 60 * 24 // 24 hours
+
+	c.Session.Cookie.Name = "_auth_proxy_token"
+	c.Session.Cookie.Secure = true
 
 	c.OIDC.RoleClaimName = "groups"
 	c.OIDC.DisableRoles = false
@@ -135,7 +141,11 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		return nil, err
 	}
 
-	if len(conf.Cookie.Secret) < 16 {
+	if conf.Session.Method != "jwt-cookie" {
+		log.Fatalf("Invalid session type supplied (%s), only valid type is \"jwt-cookie\"", conf.Session.Method)
+	}
+
+	if len(conf.Session.Cookie.Secret) < 16 {
 		log.Fatalf("Error: your cookie.secret was less than 16 characters. Please supply a long, random secret")
 	}
 

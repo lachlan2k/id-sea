@@ -40,7 +40,7 @@ func (w *Webserver) loginRouteHandler(c echo.Context) error {
 		Name:     nonceCookieName,
 		Value:    nonceStr,
 		Expires:  time.Now().Add(5 * time.Minute),
-		Secure:   w.conf.Cookie.Secure,
+		Secure:   w.conf.Session.Cookie.Secure,
 		HttpOnly: true,
 	})
 

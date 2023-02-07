@@ -47,7 +47,7 @@ issuer_discovery_override_url="http://keycloak/realms/home"
 To identify users across requests, ID Sea currently uses JWTs stored in a cookie. The available options are shown with their defaults below:
 
 ```toml
-[cookie]
+[session.cookie]
 secret="" # Make sure you set this to a long, random string!
 domain="" # Make sure to set this to the domain your authenticated apps are served from. For example, for auth.server.lan, you may wish to set `domain` to "server.lan"
 name="_auth_proxy_token"

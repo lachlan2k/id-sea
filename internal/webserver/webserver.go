@@ -23,10 +23,10 @@ func New(conf *config.Config) *Webserver {
 	e := echo.New()
 
 	sessionHandler := &session.JWTSessionHandler{
-		Secret:       []byte(conf.Cookie.Secret),
-		CookieName:   conf.Cookie.Name,
-		CookieSecure: conf.Cookie.Secure,
-		Lifetime:     time.Duration(conf.Cookie.MaxAge),
+		Secret:       []byte(conf.Session.Cookie.Secret),
+		CookieName:   conf.Session.Cookie.Name,
+		CookieSecure: conf.Session.Cookie.Secure,
+		Lifetime:     time.Duration(conf.Session.Lifetime),
 	}
 
 	oidcUtils, err := makeOIDCUtils(conf)
