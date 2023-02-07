@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lachlan2k/id-sea/internal/accesscontrol"
 	"github.com/lachlan2k/id-sea/internal/session"
+	"github.com/lachlan2k/id-sea/internal/utils"
 )
 
 func (w *Webserver) loginRouteHandler(c echo.Context) error {
@@ -41,6 +42,7 @@ func (w *Webserver) loginRouteHandler(c echo.Context) error {
 		Value:    nonceStr,
 		Expires:  time.Now().Add(5 * time.Minute),
 		Secure:   w.conf.Session.Cookie.Secure,
+		Path:     "/",
 		HttpOnly: true,
 	})
 
@@ -112,6 +114,13 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Server received token with invalid claims")
 	}
 
+	if !w.conf.AccessControl.AllowAllEmails {
+		if !utils.TestStringAgainstSliceMatchers(w.conf.AccessControl.EmailAllowlist, email) {
+			logger.Printf("Denied authentication attempt for %s, as their email wasn't in the allow list", email)
+			return c.String(http.StatusForbidden, "Forbidden")
+		}
+	}
+
 	err = w.sessionHandler.Start(c, session.SessionData{
 		Email: email,
 		Roles: roles,
@@ -132,7 +141,7 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 	}
 
 	res.Email = email
-	res.Roles = roles
+	res.Roles = utils.GetAllRolesForUser(w.conf, email, roles)
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -154,7 +163,44 @@ func (w *Webserver) authRouteHandler(c echo.Context) error {
 		})
 	}
 
-	err = accesscontrol.CheckAccess(w.conf, sessionData.Email, sessionData.Roles, c.Request().Host)
+	err = accesscontrol.CheckAccess(w.conf, sessionData.Email, utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles), c.Request().Host)
+	if err != nil {
+		logger.Printf(err.Error())
+		return c.JSON(http.StatusForbidden, unauthorizedResponse{
+			Error: fmt.Sprintf("%s is not allowed to access %s", sessionData.Email, c.Request().Host),
+		})
+	}
+
+	// We passed all of our ACL checks, allow user
+	var res struct {
+		Email string   `json:"email"`
+		Roles []string `json:"roles"`
+	}
+
+	res.Email = sessionData.Email
+	res.Roles = utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles)
+
+	return c.JSON(http.StatusOK, res)
+}
+
+func (w *Webserver) forwardAuthRouteHandler(c echo.Context) error {
+	logger := c.Echo().Logger
+
+	sessionData, err := w.sessionHandler.GetSessionData(c)
+	if err != nil {
+		if err == session.ErrInvalidSession {
+			return c.Redirect(http.StatusFound, w.conf.BaseURL+"/login?redir="+c.QueryParam("redir"))
+		}
+
+		logger.Printf("unexpected error occured getting session data: %v", err)
+
+		return c.JSON(http.StatusForbidden, unauthorizedResponse{
+			Error: "Unauthorized",
+		})
+	}
+
+	// err = accesscontrol.CheckAccess(w.conf, sessionData.Email, utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles), c.Request().Host)
+	err = accesscontrol.CheckAccess(w.conf, sessionData.Email, utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles), c.Request().Host)
 	if err != nil {
 		logger.Printf(err.Error())
 		return c.JSON(http.StatusForbidden, unauthorizedResponse{

@@ -2,6 +2,8 @@ package utils
 
 import (
 	"strings"
+
+	"github.com/lachlan2k/id-sea/internal/config"
 )
 
 // Allows you to specify *.google.com or *@gmail.com to a suffix match.
@@ -36,4 +38,31 @@ func TestStringAgainstSliceMatchers(matchers []string, in string) bool {
 	}
 
 	return false
+}
+
+func MergeSlicesUniq(inputs ...[]string) []string {
+	unique := map[string]bool{}
+	for _, input := range inputs {
+		for _, value := range input {
+			unique[value] = true
+		}
+	}
+
+	result := make([]string, 0, len(unique))
+	for entry := range unique {
+		result = append(result, entry)
+	}
+
+	return result
+}
+
+// Merge session roles and mapped roles
+func GetAllRolesForUser(conf *config.Config, email string, sessionRoles []string) []string {
+	mappedRoles, ok := conf.AccessControl.RoleMapping[email]
+
+	if !ok {
+		return sessionRoles
+	}
+
+	return MergeSlicesUniq(sessionRoles, mappedRoles)
 }

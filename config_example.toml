@@ -1,8 +1,10 @@
+base_url="http://localhost:8080/"
+redirect_allowed_domains=["*.server.lan"]
+
 [oidc]
 client_id="id-sea"
 client_secret="changeme"
 issuer_url="https://keycloak.lan/realms/home"
-redirect_url="http://localhost:8080/callback"
 
 [session.cookie]
 secret="changeme"
@@ -23,5 +25,5 @@ media = [
 
 [access_control.acls]
 family-user = ["media"]
-dev-user = ["media", "tools]
+dev-user = ["media", "tools"]
 admin-user = ["admin"]

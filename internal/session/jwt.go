@@ -49,6 +49,7 @@ func (s *JWTSessionHandler) Start(c echo.Context, data SessionData) error {
 		Secure:   s.CookieSecure,
 		HttpOnly: true,
 		Expires:  sessExpiryTime,
+		Path:     "/",
 	})
 
 	return nil
@@ -56,15 +57,19 @@ func (s *JWTSessionHandler) Start(c echo.Context, data SessionData) error {
 
 func (s *JWTSessionHandler) Destroy(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
-		Name:    s.CookieName,
-		Value:   "",
-		Expires: time.Unix(0, 0),
+		Name:     s.CookieName,
+		Value:    "",
+		Secure:   s.CookieSecure,
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		Path:     "/",
 	})
 	return nil
 }
 
 func (s *JWTSessionHandler) GetSessionData(c echo.Context) (*SessionData, error) {
 	authCookie, err := c.Cookie(s.CookieName)
+
 	if err != nil || authCookie.Value == "" {
 		return nil, ErrInvalidSession
 	}

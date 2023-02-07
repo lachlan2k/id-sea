@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	ListenPort        int      `toml:"listen_port"`
-	RedirectAllowlist []string `toml:"redirect_allow_list"`
+	ListenPort        int      `toml:"port"`
+	BaseURL           string   `toml:"base_url"`
+	RedirectAllowlist []string `toml:"redirect_allowed_domains"`
 
 	Session struct {
 		Method   string `toml:"type"`
@@ -31,8 +32,8 @@ type Config struct {
 		ClientSecret               string `toml:"client_secret"`
 
 		// The name of the OIDC claim associated to a list of roles. Default is "groups"
-		DisableRoles     bool     `toml:"disable_roles"`
 		RoleClaimName    string   `toml:"role_claim_name"`
+		EnableRoles      bool     `toml:"enable_roles"`
 		AdditionalScopes []string `toml:"additional_scopes"`
 	} `toml:"oidc"`
 
@@ -72,7 +73,7 @@ func (c *Config) setDefaults() {
 	c.Session.Cookie.Secure = true
 
 	c.OIDC.RoleClaimName = "groups"
-	c.OIDC.DisableRoles = false
+	c.OIDC.EnableRoles = true
 
 	c.AccessControl.DisableACLRules = false
 }
@@ -139,6 +140,14 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 	err = toml.Unmarshal(file, &nilChecker)
 	if err != nil {
 		return nil, err
+	}
+
+	if conf.BaseURL == "" {
+		log.Fatalf("Please supply base_url")
+	}
+
+	if conf.OIDC.RedirectURL == "" {
+		conf.OIDC.RedirectURL = conf.BaseURL + "/callback"
 	}
 
 	if conf.Session.Method != "jwt-cookie" {

@@ -60,6 +60,7 @@ func (w *Webserver) Run(conf *config.Config) {
 	e.GET("/logout", w.logoutRouteHandler)
 	e.GET("/callback", w.callbackRouteHandler)
 	e.GET("/auth", w.authRouteHandler)
+	e.GET("/forward_auth", w.forwardAuthRouteHandler)
 
 	err := w.e.Start(fmt.Sprintf(":%d", conf.ListenPort))
 	w.e.Logger.Fatal(err)
