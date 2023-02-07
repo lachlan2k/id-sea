@@ -4,7 +4,7 @@ auth.server.lan {
 
 secure.server.lan {
     forward_auth id_sea:8000 {
-        uri /forward_auth?redir=https:%2f%2f{http.request.hostport}{http.request.uri}
+        uri /verify?redir=https:%2f%2f{http.request.hostport}{http.request.uri}
     }
 
     respond "Shh, secret"
