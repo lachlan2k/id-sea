@@ -14,11 +14,21 @@ import (
 	"github.com/lachlan2k/id-sea/internal/utils"
 )
 
+type AuthInfoRes struct {
+	Email string   `json:"email"`
+	Roles []string `json:"roles"`
+}
+
 func (w *Webserver) loginRouteHandler(c echo.Context) error {
 	logger := c.Echo().Logger
 
 	nonceBuff := make([]byte, 16)
-	rand.Read(nonceBuff)
+	_, err := rand.Read(nonceBuff)
+	if err != nil {
+		logger.Errorf("Failed to generate random material for oauth nonce: %v", err)
+		return c.String(http.StatusInternalServerError, "Something went wrong")
+	}
+
 	nonceStr := base64.RawURLEncoding.EncodeToString(nonceBuff)
 	state := oauthState{
 		Nonce:    nonceStr,
@@ -135,15 +145,10 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 		return c.Redirect(http.StatusFound, state.Redirect)
 	}
 
-	var res struct {
-		Email string   `json:"email"`
-		Roles []string `json:"roles"`
-	}
-
-	res.Email = email
-	res.Roles = utils.GetAllRolesForUser(w.conf, email, roles)
-
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, AuthInfoRes{
+		Email: email,
+		Roles: utils.GetAllRolesForUser(w.conf, email, roles),
+	})
 }
 
 type unauthorizedResponse struct {
@@ -163,15 +168,10 @@ func (w *Webserver) authInfoRouteHandler(c echo.Context) error {
 		})
 	}
 
-	var res struct {
-		Email string   `json:"email"`
-		Roles []string `json:"roles"`
-	}
-
-	res.Email = sessionData.Email
-	res.Roles = utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles)
-
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, AuthInfoRes{
+		Email: sessionData.Email,
+		Roles: utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles),
+	})
 }
 
 func (w *Webserver) verifyAuthRouteHandler(c echo.Context) error {
@@ -199,13 +199,8 @@ func (w *Webserver) verifyAuthRouteHandler(c echo.Context) error {
 	}
 
 	// We passed all of our ACL checks, allow user
-	var res struct {
-		Email string   `json:"email"`
-		Roles []string `json:"roles"`
-	}
-
-	res.Email = sessionData.Email
-	res.Roles = sessionData.Roles
-
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, AuthInfoRes{
+		Email: sessionData.Email,
+		Roles: utils.GetAllRolesForUser(w.conf, sessionData.Email, sessionData.Roles),
+	})
 }

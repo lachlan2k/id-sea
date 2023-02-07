@@ -75,6 +75,7 @@ func (c *Config) setDefaults() {
 	c.OIDC.RoleClaimName = "groups"
 	c.OIDC.EnableRoles = false
 
+	c.AccessControl.AllowAllEmails = false
 	c.AccessControl.DisableACLRules = false
 }
 
@@ -121,23 +122,10 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		return nil, err
 	}
 
-	// This is designed to look for places where config has/hasn't been provided
-	// We use pointers so we can see if things are nil or not
-	var nilChecker struct {
-		AccessControl struct {
-			AllowAllEmails *bool `toml:"allow_all_emails"`
-		} `toml:"access_control"`
-	}
-
 	conf := new(Config)
 	conf.setDefaults()
 
 	err = toml.Unmarshal(file, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	err = toml.Unmarshal(file, &nilChecker)
 	if err != nil {
 		return nil, err
 	}
@@ -162,21 +150,8 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		log.Fatalf("Your OIDC config is insufficient. Please supply the following: client_id, client_secret, issuer_url, redirect_url")
 	}
 
-	if len(conf.AccessControl.EmailAllowlist) > 0 {
-		// User didn't explicitly set AllowAllEmails
-		if nilChecker.AccessControl.AllowAllEmails == nil {
-			log.Println("Warning: you have set an email_allow_list, but allow_all_emails was not set")
-			log.Println("Whilst this is acceptable, and allow_all_emails has defaulted to false, if you remove all entries from email_allow_list, then allow_all_emails will be implicitly enabled")
-			log.Println("As such, it is reccomended to explicitly set email_allow_list=false in your config")
-			conf.AccessControl.AllowAllEmails = false
-		} else if conf.AccessControl.AllowAllEmails {
-			// User did explicitly set allow_all_emails... but they set it to true? thus invalidating the allow list
-			log.Println("WARNING: you have set an email_allow_list, but because allow_all_emails is set to true, your allow list will be bypassed entirely!")
-			log.Println("This is fine for debugging purposes, but please be aware your allow list is pointless")
-		}
-	} else {
-		// If user didn't set it, nor did they supply an allow list, we quietly allow all emails
-		conf.AccessControl.AllowAllEmails = true
+	if len(conf.AccessControl.EmailAllowlist) == 0 && !conf.AccessControl.AllowAllEmails {
+		log.Fatalf("Config error: your email_allow_list is empty, and allow_all_emails is set to false. Nobody will be able to login.")
 	}
 
 	conf.flattenACLs()

@@ -18,9 +18,9 @@ func MatchesWithWildcard(matcher string, valueToEvaluate string) bool {
 
 // Evalute a slice against a single string matches
 // For example, check ["google.com", "foo.example.com", "bing.com"] has a match for "*.example.com"
-func TestSliceAgainstStringMatcher(matcher string, in []string) bool {
-	for _, x := range in {
-		if MatchesWithWildcard(x, matcher) {
+func TestSliceAgainstStringMatcher(matcher string, values []string) bool {
+	for _, valueToEvaluate := range values {
+		if MatchesWithWildcard(matcher, valueToEvaluate) {
 			return true
 		}
 	}
@@ -30,9 +30,9 @@ func TestSliceAgainstStringMatcher(matcher string, in []string) bool {
 
 // Evalute a single string against possible wildcards in slice
 // For example, check "foo.example.com" against ["google.com", "*.example.com", "bing.com"]
-func TestStringAgainstSliceMatchers(matchers []string, in string) bool {
+func TestStringAgainstSliceMatchers(matchers []string, valueToEvaluate string) bool {
 	for _, matcher := range matchers {
-		if MatchesWithWildcard(matcher, in) {
+		if MatchesWithWildcard(matcher, valueToEvaluate) {
 			return true
 		}
 	}
