@@ -1,0 +1,11 @@
+auth.server.lan {
+    reverse_proxy id_sea:8080
+}
+
+secure.server.lan {
+    forward_auth id_sea:8000 {
+        uri /forward_auth?redir=https:%2f%2f{http.request.hostport}{http.request.uri}
+    }
+
+    respond "Shh, secret"
+}

@@ -1,0 +1,24 @@
+(require-auth) {
+    forward_auth id_sea:8000 {
+        uri /forward_auth?redir=https:%2f%2f{http.request.hostport}{http.request.uri}
+    }
+}
+
+auth.server.lan {
+    reverse_proxy id_sea:8080
+}
+
+secure.server.lan {
+    import require-auth
+    respond "Shh, secret"
+}
+
+admin.server.lan {
+    import require-auth
+    respond "Admin only"
+}
+
+manager.server.lan {
+    import require-auth
+    respond "Admin server manager"
+}

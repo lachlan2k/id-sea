@@ -1,0 +1,13 @@
+redirect_allowed_domains=["*.server.lan"]
+base_url="https://auth.server.lan"
+
+[oidc]
+client_id="<placeholder>"
+client_secret="<placeholder>"
+issuer_url="https://accounts.google.com"
+
+[session.cookie]
+secret="<placeholder>"
+
+[access_control]
+email_allow_list=["example@gmail.com"]

@@ -1,0 +1,25 @@
+redirect_allowed_domains=["*.server.lan"]
+base_url="https://auth.server.lan"
+
+[oidc]
+client_id="<placeholder>"
+client_secret="<placeholder>"
+issuer_url="https://accounts.google.com"
+
+[session.cookie]
+secret="<placeholder>"
+
+[access_control]
+email_allow_list=["example@gmail.com", "example+2@gmail.com"]
+
+[access_control.role_mapping]
+"example@gmail.com"=["homelab-user", "admin-user"]
+"example+2@gmail.com"=["family-user", "media-user"]
+
+[access_control.host_groups]
+basic=["secure.server.lan", "home.server.lan"]
+admin=["admin.server.lan", "manager.server.lan"]
+
+[access_control.acls]
+basic-user=["basic"]
+admin-admin=["admin"]
