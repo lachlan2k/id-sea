@@ -151,7 +151,7 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 	}
 
 	if len(conf.AccessControl.EmailAllowlist) == 0 && !conf.AccessControl.AllowAllEmails {
-		log.Fatalf("Config error: your email_allow_list is empty, and allow_all_emails is set to false. Nobody will be able to login.")
+		log.Fatalf("Config error: your email_allow_list is empty, and allow_all_emails isn't set to true. Nobody will be able to login.")
 	}
 
 	conf.flattenACLs()
