@@ -29,7 +29,6 @@ type JWTSessionHandler struct {
 func (s *JWTSessionHandler) Start(c echo.Context, data SessionData) error {
 	sessExpiryTime := time.Now().Add(s.Lifetime * time.Second)
 
-	// We've now verified our user
 	sessClaims := &jwtClaims{
 		SessionData: data,
 		jwtRegisteredClaims: jwt.RegisteredClaims{
