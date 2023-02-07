@@ -41,11 +41,16 @@ func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bo
 }
 
 func RoleACLMatchesHost(conf *config.Config, allRoles []string, hostname string) bool {
+	acls := conf.GetFlatACLs()
+
 	for _, roleName := range allRoles {
-		if hostsRoleCanAccess, ok := conf.AccessControl.ACLs[roleName]; ok {
-			if utils.TestStringAgainstSliceMatchers(hostsRoleCanAccess, hostname) {
-				return true
-			}
+		aclsForRole, ok := acls[roleName]
+		if !ok {
+			continue
+		}
+
+		if utils.TestStringAgainstSliceMatchers(aclsForRole, hostname) {
+			return true
 		}
 	}
 

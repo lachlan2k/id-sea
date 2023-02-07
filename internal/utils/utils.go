@@ -1,6 +1,8 @@
 package utils
 
-import "strings"
+import (
+	"strings"
+)
 
 // Allows you to specify *.google.com or *@gmail.com to a suffix match.
 // Effectively, if the first character is a *, it just checks to see if its a suffix
@@ -11,12 +13,6 @@ func MatchesWithWildcard(matcher string, valueToEvaluate string) bool {
 	}
 	return valueToEvaluate == matcher
 }
-
-const (
-	WildcardInSlice = iota
-
-	WildcardInString = iota
-)
 
 // Evalute a slice against a single string matches
 // For example, check ["google.com", "foo.example.com", "bing.com"] has a match for "*.example.com"

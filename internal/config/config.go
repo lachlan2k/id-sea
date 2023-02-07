@@ -52,6 +52,8 @@ type Config struct {
 
 		// role name => allowed host groups
 		ACLs map[string][]string `toml:"acls"`
+
+		flattenedACLs map[string][]string
 	} `toml:"access_control"`
 }
 
@@ -67,6 +69,41 @@ func (c *Config) setDefaults() {
 	c.OIDC.DisableRoles = false
 
 	c.AccessControl.DisableACLRules = false
+}
+
+// Flattens out host groups into a role => []string map
+func (c *Config) flattenACLs() {
+	flattened := make(map[string][]string)
+
+	for roleName, allowedHostGroups := range c.AccessControl.ACLs {
+		flattened[roleName] = make([]string, 0)
+
+		// Dirty way to prevent dupes: assign them as a map key instead, then get them out later
+		// Can't be bothered writing this efficiently
+		flatHosts := make(map[string]any)
+
+		for _, hostGroupName := range allowedHostGroups {
+			hostsInGroup, ok := c.AccessControl.HostGroups[hostGroupName]
+			if !ok {
+				continue
+			}
+
+			for _, host := range hostsInGroup {
+				flatHosts[host] = nil
+			}
+		}
+
+		for host := range flatHosts {
+			flattened[roleName] = append(flattened[roleName], host)
+		}
+	}
+
+	c.AccessControl.flattenedACLs = flattened
+}
+
+// Returns a flat role => []hostname map
+func (c *Config) GetFlatACLs() map[string][]string {
+	return c.AccessControl.flattenedACLs
 }
 
 func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
@@ -120,6 +157,8 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		// If user didn't set it, nor did they supply an allow list, we quietly allow all emails
 		conf.AccessControl.AllowAllEmails = true
 	}
+
+	conf.flattenACLs()
 
 	return conf, nil
 }

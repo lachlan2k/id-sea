@@ -8,13 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/lachlan2k/id-sea/internal/accesscontrol"
-	"github.com/lachlan2k/id-sea/internal/config"
+	"github.com/lachlan2k/id-sea/internal/session"
 )
 
-func loginRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Config) error {
+func (w *Webserver) loginRouteHandler(c echo.Context) error {
 	logger := c.Echo().Logger
 
 	nonceBuff := make([]byte, 16)
@@ -41,14 +40,19 @@ func loginRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Config
 		Name:     nonceCookieName,
 		Value:    nonceStr,
 		Expires:  time.Now().Add(5 * time.Minute),
-		Secure:   conf.Cookie.Secure,
+		Secure:   w.conf.Cookie.Secure,
 		HttpOnly: true,
 	})
 
-	return c.Redirect(http.StatusFound, oidcUtils.config.AuthCodeURL(stateStr))
+	return c.Redirect(http.StatusFound, w.oidcUtils.config.AuthCodeURL(stateStr))
 }
 
-func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Config) error {
+func (w *Webserver) logoutRouteHandler(c echo.Context) error {
+	w.sessionHandler.Destroy(c)
+	return c.String(http.StatusOK, "")
+}
+
+func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 	logger := c.Echo().Logger
 
 	var state oauthState
@@ -71,7 +75,7 @@ func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Con
 		return c.String(http.StatusBadRequest, "No code was provided")
 	}
 
-	token, err := oidcUtils.config.Exchange(oidcUtils.ctx, code)
+	token, err := w.oidcUtils.config.Exchange(w.oidcUtils.ctx, code)
 	if err != nil {
 		logger.Printf("Couldn't perform oauth2 exchange, code: %s, err: %v", code, err)
 		return c.String(http.StatusInternalServerError, "Failed perform oauth2 exchange: provided code was likely invalid")
@@ -83,7 +87,7 @@ func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Con
 		return c.String(http.StatusInternalServerError, "Server received invalid oauth2 access token")
 	}
 
-	idToken, err := oidcUtils.verifier.Verify(oidcUtils.ctx, rawToken)
+	idToken, err := w.oidcUtils.verifier.Verify(w.oidcUtils.ctx, rawToken)
 	if err != nil {
 		logger.Printf("id_token failed verification: token: %s, err: %v", rawToken, err)
 		return c.String(http.StatusInternalServerError, "Server received invalid oauth2 access token")
@@ -96,7 +100,7 @@ func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Con
 		return c.String(http.StatusInternalServerError, "Server received invalid oauth2 access token")
 	}
 
-	roles, err := extractRolesFromClaim(conf, claims)
+	roles, err := extractRolesFromClaim(w.conf, claims)
 	if err != nil {
 		logger.Printf("Couldn't extract roles from claims, token: %s, err: %v", rawToken, err)
 		return c.String(http.StatusInternalServerError, "Server received token with invalid claims")
@@ -104,38 +108,21 @@ func callbackRouteHandler(c echo.Context, oidcUtils *oidcUtils, conf *config.Con
 
 	email, ok := claims["email"].(string)
 	if !ok && email == "" {
-		logger.Printf("Couldn't extract email from token claims (%v)", conf.OIDC.RoleClaimName, claims)
+		logger.Printf("Couldn't extract email from token claims (%v)", w.conf.OIDC.RoleClaimName, claims)
 		return c.String(http.StatusInternalServerError, "Server received token with invalid claims")
 	}
 
-	sessExpiryTime := time.Now().Add(time.Duration(conf.Cookie.MaxAge) * time.Second)
-
-	// We've now verified our user
-	sessClaims := &jwtClaims{
-		email,
-		roles,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(sessExpiryTime),
-		},
-	}
-
-	sessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, sessClaims)
-
-	signedSessToken, err := sessToken.SignedString([]byte(conf.Cookie.Secret))
-	if err != nil {
-		logger.Printf("Couldn't sign session JWT: %v", err)
-		return c.String(http.StatusInternalServerError, "Failed to start session")
-	}
-
-	c.SetCookie(&http.Cookie{
-		Name:     conf.Cookie.Name,
-		Value:    signedSessToken,
-		Secure:   conf.Cookie.Secure,
-		HttpOnly: true,
-		Expires:  sessExpiryTime,
+	err = w.sessionHandler.Start(c, session.SessionData{
+		Email: email,
+		Roles: roles,
 	})
+	if err != nil {
+		logger.Printf("Couldn't start user's session: %v", err)
+		w.sessionHandler.Destroy(c) // Might as well try and clean up anyway, doesn't matter if it fails
+		return c.String(http.StatusInternalServerError, "Couldn't log you in")
+	}
 
-	if accesscontrol.VerifyRedirectURL(conf, state.Redirect) {
+	if accesscontrol.VerifyRedirectURL(w.conf, state.Redirect) {
 		return c.Redirect(http.StatusFound, state.Redirect)
 	}
 
@@ -154,22 +141,24 @@ type unauthorizedResponse struct {
 	Error string `json:"error"`
 }
 
-func authRouteHandler(c echo.Context, conf *config.Config) error {
+func (w *Webserver) authRouteHandler(c echo.Context) error {
 	logger := c.Echo().Logger
 
-	authClaims, err := validateJWT(conf, c)
+	sessionData, err := w.sessionHandler.GetSessionData(c)
 	if err != nil {
-		logger.Printf(err.Error())
+		if err != session.ErrInvalidSession {
+			logger.Printf("unexpected error occured getting session data: %v", err)
+		}
 		return c.JSON(http.StatusForbidden, unauthorizedResponse{
 			Error: "Unauthorized",
 		})
 	}
 
-	err = accesscontrol.CheckAccess(conf, authClaims.Email, authClaims.Roles, c.Request().Host)
+	err = accesscontrol.CheckAccess(w.conf, sessionData.Email, sessionData.Roles, c.Request().Host)
 	if err != nil {
 		logger.Printf(err.Error())
 		return c.JSON(http.StatusForbidden, unauthorizedResponse{
-			Error: fmt.Sprintf("%s is not allowed to access %s", authClaims.Email, c.Request().Host),
+			Error: fmt.Sprintf("%s is not allowed to access %s", sessionData.Email, c.Request().Host),
 		})
 	}
 
@@ -179,8 +168,8 @@ func authRouteHandler(c echo.Context, conf *config.Config) error {
 		Roles []string `json:"roles"`
 	}
 
-	res.Email = authClaims.Email
-	res.Roles = authClaims.Roles
+	res.Email = sessionData.Email
+	res.Roles = sessionData.Roles
 
 	return c.JSON(http.StatusOK, res)
 }
