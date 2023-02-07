@@ -73,7 +73,7 @@ func (c *Config) setDefaults() {
 	c.Session.Cookie.Secure = true
 
 	c.OIDC.RoleClaimName = "groups"
-	c.OIDC.EnableRoles = true
+	c.OIDC.EnableRoles = false
 
 	c.AccessControl.DisableACLRules = false
 }
