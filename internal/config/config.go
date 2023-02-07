@@ -76,7 +76,7 @@ func (c *Config) flattenACLs() {
 	flattened := make(map[string][]string)
 
 	for roleName, allowedHostGroups := range c.AccessControl.ACLs {
-		flattened[roleName] = make([]string, 0)
+		allowedForThisRole := make([]string, 0)
 
 		// Dirty way to prevent dupes: assign them as a map key instead, then get them out later
 		// Can't be bothered writing this efficiently
@@ -94,8 +94,10 @@ func (c *Config) flattenACLs() {
 		}
 
 		for host := range flatHosts {
-			flattened[roleName] = append(flattened[roleName], host)
+			allowedForThisRole = append(allowedForThisRole, host)
 		}
+
+		flattened[roleName] = allowedForThisRole
 	}
 
 	c.AccessControl.flattenedACLs = flattened
