@@ -59,8 +59,8 @@ func (w *Webserver) Run(conf *config.Config) {
 	e.GET("/login", w.loginRouteHandler)
 	e.GET("/logout", w.logoutRouteHandler)
 	e.GET("/callback", w.callbackRouteHandler)
-	e.GET("/auth", w.authRouteHandler)
-	e.GET("/forward_auth", w.forwardAuthRouteHandler)
+	e.GET("/info", w.authInfoRouteHandler)
+	e.GET("/verify", w.verifyAuthRouteHandler)
 
 	err := w.e.Start(fmt.Sprintf(":%d", conf.ListenPort))
 	w.e.Logger.Fatal(err)
