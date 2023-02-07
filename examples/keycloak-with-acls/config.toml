@@ -1,0 +1,24 @@
+redirect_allowed_domains=["*.server.lan"]
+base_url="https://auth.server.lan"
+
+[oidc]
+client_id="<placeholder>"
+client_secret="<placeholder>"
+issuer_url="https://keycloak.server.lan/realms/home"
+
+# Adding this OIDC scope will add your Keycloak roles to the "groups" claim
+additional_scopes=["microprofile-jwt"]
+# Enable roles from our provider
+enable_roles=true
+role_claim_name="groups"
+
+[session.cookie]
+secret="<placeholder>"
+
+[access_control.host_groups]
+basic=["secure.server.lan", "home.server.lan"]
+admin=["admin.server.lan", "manager.server.lan"]
+
+[access_control.acls]
+basic-user=["basic"]
+admin-admin=["admin"]
