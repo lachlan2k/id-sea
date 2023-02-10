@@ -121,7 +121,7 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 	}
 
 	if !w.conf.AccessControl.AllowAllEmails {
-		if !utils.TestStringAgainstSliceMatchers(w.conf.AccessControl.EmailAllowlist, email) {
+		if !utils.CheckStringAgainstSliceMatchers(w.conf.AccessControl.EmailAllowlist, email) {
 			logger.Printf("Denied authentication attempt for %s, as their email wasn't in the allow list", email)
 			return c.String(http.StatusForbidden, "Forbidden")
 		}

@@ -18,7 +18,7 @@ func VerifyRedirectURL(conf *config.Config, urlStr string) bool {
 		return false
 	}
 
-	return utils.TestStringAgainstSliceMatchers(conf.RedirectAllowlist, u.Host)
+	return utils.CheckStringAgainstSliceMatchers(conf.RedirectAllowlist, u.Host)
 }
 
 func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bool {
@@ -27,12 +27,12 @@ func HasMandatoryRole(conf *config.Config, email string, roleClaims []string) bo
 		return true
 	}
 
-	if utils.TestSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleClaims) {
+	if utils.CheckSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleClaims) {
 		return true
 	}
 
 	if roleListForUser, ok := conf.AccessControl.RoleMapping[email]; ok {
-		if utils.TestSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleListForUser) {
+		if utils.CheckSliceAgainstStringMatcher(conf.AccessControl.MandatoryRole, roleListForUser) {
 			return true
 		}
 	}
@@ -49,7 +49,7 @@ func RoleACLMatchesHost(conf *config.Config, allRoles []string, hostname string)
 			continue
 		}
 
-		if utils.TestStringAgainstSliceMatchers(aclsForRole, hostname) {
+		if utils.CheckStringAgainstSliceMatchers(aclsForRole, hostname) {
 			return true
 		}
 	}
@@ -59,7 +59,7 @@ func RoleACLMatchesHost(conf *config.Config, allRoles []string, hostname string)
 
 func CheckAccess(conf *config.Config, email string, roles []string, hostname string) error {
 	if !conf.AccessControl.AllowAllEmails {
-		if !utils.TestStringAgainstSliceMatchers(conf.AccessControl.EmailAllowlist, email) {
+		if !utils.CheckStringAgainstSliceMatchers(conf.AccessControl.EmailAllowlist, email) {
 			return fmt.Errorf("user was successfully auth'd (%s), but their email wasn't in the allow list", email)
 		}
 	}
