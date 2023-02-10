@@ -35,10 +35,6 @@ func (w *Webserver) loginRouteHandler(c echo.Context) error {
 		Redirect: c.QueryParam("redir"),
 	}
 
-	if state.Redirect == "" {
-		state.Redirect = "/auth"
-	}
-
 	stateBuff, err := json.Marshal(state)
 	if err != nil {
 		logger.Errorf("Failed to marshal state for oauth: %v", err)
@@ -143,6 +139,10 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 
 	if accesscontrol.VerifyRedirectURL(w.conf, state.Redirect) {
 		return c.Redirect(http.StatusFound, state.Redirect)
+	}
+
+	if state.Redirect != "" {
+		logger.Printf("Didn't redirect to %s, as it wasn't in the allow list (%v)", state.Redirect, w.conf.RedirectAllowlist)
 	}
 
 	return c.JSON(http.StatusOK, AuthInfoRes{
