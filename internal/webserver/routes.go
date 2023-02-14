@@ -133,7 +133,7 @@ func (w *Webserver) callbackRouteHandler(c echo.Context) error {
 	})
 	if err != nil {
 		logger.Printf("Couldn't start user's session: %v", err)
-		w.sessionHandler.Destroy(c) // Might as well try and clean up anyway, doesn't matter if it fails
+		w.sessionHandler.Destroy(c) // Might as well try and clean up anyway, no need to check err as doesn't matter if it fails
 		return c.String(http.StatusInternalServerError, "Couldn't log you in")
 	}
 

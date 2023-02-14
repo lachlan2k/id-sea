@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"log"
 	"os"
 
@@ -142,7 +144,18 @@ func LoadFromTomlFileAndValidate(filepath string) (*Config, error) {
 		log.Fatalf("Invalid session type supplied (%s), only valid type is \"jwt-cookie\"", conf.Session.Method)
 	}
 
-	if len(conf.Session.Cookie.Secret) < 16 {
+	if len(conf.Session.Cookie.Secret) == 0 {
+		log.Printf("No cookie secret was provided, randomly generating one...")
+		buff := make([]byte, 16)
+		_, err := rand.Read(buff)
+		if err != nil {
+			log.Fatalf("Failed to generate random cookie secret: %v", err)
+		}
+
+		conf.Session.Cookie.Secret = base64.RawStdEncoding.EncodeToString(buff)
+		log.Printf("Note: because your cookie secret was randomly generated, if id-sea restarts, or you are trying to load balance across multiple instances, users may get logged out.")
+
+	} else if len(conf.Session.Cookie.Secret) < 16 {
 		log.Fatalf("Error: your cookie.secret was less than 16 characters. Please supply a long, random secret")
 	}
 

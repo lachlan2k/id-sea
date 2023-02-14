@@ -15,6 +15,10 @@ role_claim_name="groups"
 [session.cookie]
 secret="<placeholder>"
 
+[access_control]
+# Required to trust all users from our OIDC provider
+allow_all_emails=true
+
 [access_control.host_groups]
 basic=["secure.server.lan", "home.server.lan"]
 admin=["admin.server.lan", "manager.server.lan"]
