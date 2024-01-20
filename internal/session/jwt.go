@@ -22,6 +22,7 @@ type jwtClaims struct {
 type JWTSessionHandler struct {
 	Secret       []byte
 	CookieName   string
+	CookieDomain string
 	CookieSecure bool
 	Lifetime     time.Duration
 }
@@ -46,6 +47,7 @@ func (s *JWTSessionHandler) Start(c echo.Context, data SessionData) error {
 	c.SetCookie(&http.Cookie{
 		Name:     s.CookieName,
 		Value:    signedSessToken,
+		Domain:   s.CookieDomain,
 		Secure:   s.CookieSecure,
 		HttpOnly: true,
 		Expires:  sessExpiryTime,
