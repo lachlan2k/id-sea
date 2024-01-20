@@ -25,6 +25,7 @@ func New(conf *config.Config) *Webserver {
 	sessionHandler := &session.JWTSessionHandler{
 		Secret:       []byte(conf.Session.Cookie.Secret),
 		CookieName:   conf.Session.Cookie.Name,
+		CookieDomain: conf.Session.Cookie.Domain,
 		CookieSecure: conf.Session.Cookie.Secure,
 		Lifetime:     time.Duration(conf.Session.Lifetime),
 	}
