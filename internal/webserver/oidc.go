@@ -71,7 +71,7 @@ func extractRolesFromClaim(conf *config.Config, claims map[string]any) ([]string
 		return nil, fmt.Errorf("couldn't cast roles %v (type of %T) to []any", roleClaim, roleClaim)
 	}
 
-	roles := make([]string, 0, len(rolesAny))
+	roles := make([]string, len(rolesAny))
 	for i, v := range rolesAny {
 		roleStr, ok := v.(string)
 		if !ok {
